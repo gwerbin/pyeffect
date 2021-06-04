@@ -6,7 +6,8 @@ IDK.
 
 ## Usage
 
-* `handle(operation, handlers)`
+* `effects.handle(operation, handlers=None)`
+* `effects.set_handler(effect, handler)`
 
 ### Supported effects
 

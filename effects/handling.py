@@ -33,22 +33,33 @@ def _default_handle_raised_exception(effect: RaisedException) -> NoReturn:
 _Effect = TypeVar('_Effect', bound=BaseEffect)
 _Continuation = TypeVar('_Continuation', covariant=True)
 _OperationReturn = TypeVar('_OperationReturn', covariant=True)
-_Other = TypeVar('_Other')  # Anything else; TODO: how to specify "not Effectful"?
+_Other = TypeVar('_Other')
 
 
 Handler = Callable[[BaseEffect], _Continuation]
 
 
-_default_handlers: Dict[Type[BaseEffect], Handler] = {
+
+_original_handlers: Dict[Type[BaseEffect], Handler] = {
     FileRead: _default_handle_file_read,
     FileWrite: _default_handle_file_write,
     RaisedException: _default_handle_raised_exception,
 }
 
 
+_default_handlers = {**_original_handlers}
+
+
+def set_handler(effect: Type[BaseEffect], handler: Optional[Handler]) -> None:
+    if handler is None:
+        del _default_handlers[effect]
+    else:
+        _default_handlers[effect] = handler
+
+
 def _handle_impl(
     operation: Effectful[_Effect, _Continuation, _OperationReturn],
-    handlers: Mapping[Type[BaseEffect], Handler] = _default_handlers
+    handlers: Mapping[Type[BaseEffect], Handler]
 ) -> _OperationReturn:
     handler_types = tuple(handlers.keys())
 
@@ -74,20 +85,21 @@ def _handle_impl(
 @overload
 def handle(
     operation: Effectful[_Effect, _Continuation, _OperationReturn],
-    handlers: Mapping[Type[BaseEffect], Handler] = _default_handlers
+    handlers: Optional[Mapping[Type[BaseEffect], Handler]] = None
 ) -> _OperationReturn:
     ...
 
 @overload
 def handle(
     operation: _Other,
-    handlers: Mapping[Type[BaseEffect], Handler] = _default_handlers
+    handlers: Optional[Mapping[Type[BaseEffect], Handler]] = None
 ) -> _Other:
     ...
 
-def handle(operation, handlers):
+def handle(operation, handlers=None):
     if not isinstance(operation, Effectful):
         logger.debug('Operation is not something that can be handled; return as-is.')
         return operation
     else:
-        return _handle_impl(operation, handlers)
+        return _handle_impl(operation, handlers or _default_handlers)
+

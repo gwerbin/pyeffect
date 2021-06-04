@@ -50,7 +50,6 @@ class RaisedException(BaseEffect, Generic[_Exception]):
         return parameterized_repr(self.__class__.__name__, exc=self.exc)
 
 
-# TODO: is it possible to say "any Exception type, other than UnhandledEffect" ?
 class Raises:
     exception_types: Tuple[Type[Exception], ...]
 
